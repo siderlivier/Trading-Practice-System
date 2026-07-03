@@ -110,8 +110,6 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 ## 技術亮點
 
-面試時我會拿來聊的技術細節：
-
 **自訂指標公式編譯器** — 手寫的遞迴下降語法分析器將 `sma(close, period) - ema(close, 50)` 這類表達式 tokenize → AST → 產生呼叫向量化 helpers 的 JS source。編譯後的表達式用 `new Function()` 快取，5000 根 K 棒視窗執行 <5ms。支援 element-wise 的 + / − / × / ÷ 運算子，自動處理陣列與純量的型別強制轉換與 null 傳播。
 
 **方塊視覺編輯器** — AST↔block-tree 雙向轉換，使文字模式與方塊模式共用同一份儲存格式。支援方塊間拖曳互換，並含祖先/子孫循環偵測。HTML5 drag-and-drop + 浮動 slot picker。整個編輯器約 350 行程式碼。
@@ -186,18 +184,13 @@ Trading-Practice-System/
 
 後續正在思考的功能：
 
-- **線上 Live Demo（GitHub Pages）** — 讓訪客不需下載即可直接試用（等 GitHub Pages 服務可用時上線）
+- **線上 Live Demo（GitHub Pages）** — 讓訪客不需下載即可直接試用
 - **互動式教學導覽** — 5 分鐘首次使用引導
 - **情境範例庫** — 預載有趣的歷史片段並附提示（「試試這個突破設定」、「這裡練均值回歸」）
 - **多時間框架同步** — 在較高時間框架加一個小副圖
 - **策略回測執行器** — 讓使用者定義規則自動執行
 - **多商品比較** — 同時載入黃金 + 白銀 + 原油，觀察跨市場相關性
-
----
-
-## 貢獻
-
-歡迎 Issues 與 PRs。如果你有想分享的策略或指標範本，我很樂意加入專案。
+- **更多語言** - 讓更多不同國家使用者可以順暢使用
 
 ---
 
@@ -208,5 +201,5 @@ Trading-Practice-System/
 ---
 
 <div align="center">
-花了大約 2 週用 ☕ 打造。歡迎意見與批評 — <a href="https://github.com/SiderLivier/Trading-Practice-System/issues/new">開個 issue</a>
+花了大約1個月用配合使用Claude打造。歡迎意見與批評 — <a href="https://github.com/SiderLivier/Trading-Practice-System/issues/new">開個 issue</a>
 </div>
