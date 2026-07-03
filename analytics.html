@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>績效分析 · Analytics — Practice Trading</title>
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/analytics.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body class="analytics-body">
+<div class="analytics-app">
+  <header class="ana-header">
+    <h1><span data-i18n="ana.title">績效分析</span> <span class="badge">Analytics</span></h1>
+    <label class="file-btn" title="匯入 trades CSV">
+      <span data-i18n="ana.importCsv">匯入交易紀錄</span>
+      <input type="file" id="anaTradesFile" accept=".csv">
+    </label>
+    <button class="file-btn alt" id="loadFromSession" title="從目前練習頁的紀錄載入">
+      <span data-i18n="ana.loadFromSession">從練習頁載入</span>
+    </button>
+    <span class="ana-src" id="anaSrc">未載入資料</span>
+    <a href="index.html" class="ana-back" data-i18n="ana.back">← 返回練習頁</a>
+  </header>
+
+  <div class="ana-empty" id="anaEmpty">
+    <h3 data-i18n="ana.empty.title">請載入交易紀錄</h3>
+    <p data-i18n="ana.empty.intro">三種方式：</p>
+    <ul>
+      <li data-i18n="ana.empty.way1">從練習頁右上「→ 分析頁」開啟（自動帶入當前 session）</li>
+      <li data-i18n="ana.empty.way2">本頁點「從練習頁載入」（讀 localStorage）</li>
+      <li data-i18n="ana.empty.way3">本頁點「匯入交易紀錄」上傳之前匯出的 trades CSV</li>
+    </ul>
+  </div>
+
+  <main class="ana-grid" id="anaMain" style="display:none">
+    <!-- Top summary -->
+    <section class="card card-summary span-full">
+      <h3 data-i18n="ana.card.summary">總覽 Summary</h3>
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </section>
+
+    <section class="card span-2">
+      <h3 data-i18n="ana.card.equity">權益曲線 Equity Curve</h3>
+      <canvas id="chartEquity"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.dd">回撤 Drawdown</h3>
+      <canvas id="chartDD"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.monthly">月度損益 Monthly P&amp;L</h3>
+      <canvas id="chartMonthly"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.hourWR">進場時段勝率 (UTC Hour)</h3>
+      <canvas id="chartHourWR"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.dowWR">星期幾勝率 Day-of-Week</h3>
+      <canvas id="chartDowWR"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.pnlDist">P&amp;L 分佈 Distribution</h3>
+      <canvas id="chartPnLDist"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.hold">持倉時間分佈 Holding Time</h3>
+      <canvas id="chartHold"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.rollWR">滾動勝率 (Last 20)</h3>
+      <canvas id="chartRollWR"></canvas>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.longShort">Long vs Short 對比</h3>
+      <div id="longShortTable"></div>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="ana.card.reason">出場原因分析 (SL / TP / Manual)</h3>
+      <div id="reasonTable"></div>
+    </section>
+
+    <section class="card span-full">
+      <h3 data-i18n="ana.card.tradeList">交易明細 Trade List <span class="ana-hint" id="tradeCount"></span></h3>
+      <div class="trade-list-wrap">
+        <table id="anaTradeTable">
+          <thead>
+            <tr>
+              <th data-i18n="log.idx">#</th><th data-i18n="log.side">方向</th><th data-i18n="ana.tbl.entryTime">進場時間</th><th data-i18n="ana.tbl.entryPrice">進場價</th>
+              <th data-i18n="ana.tbl.exitTime">出場時間</th><th data-i18n="ana.tbl.exitPrice">出場價</th><th data-i18n="ana.tbl.size">口數</th><th data-i18n="ana.tbl.hold">持倉(分)</th>
+              <th data-i18n="log.reason">原因</th><th data-i18n="log.pnl">P&amp;L</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/analytics.js"></script>
+</body>
+</html>

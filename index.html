@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Practice Trading Terminal - 練習交易終端</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body class="v2" data-theme="ocean" data-candle="green-up">
+<div class="app">
+  <header>
+    <h1>練習交易終端 <span class="badge">Practice Trading Terminal</span></h1>
+    <label class="file-btn" title="匯入 K 線 CSV 資料">
+      <span data-i18n="header.csv">匯入 CSV</span>
+      <input type="file" id="csvFile" accept=".csv">
+    </label>
+    <label class="file-btn alt" title="從之前匯出的 trades CSV 接續練習">
+      <span data-i18n="header.tradesCsv">匯入交易紀錄</span>
+      <input type="file" id="tradesFile" accept=".csv">
+    </label>
+    <a class="file-btn alt" id="anaBtn" href="analytics.html#fromSession" target="_blank" title="開啟分析頁（自動帶入當前 session）"><span data-i18n="header.analytics">→ 分析頁</span></a>
+    <button class="settings-btn" id="settingsBtn" title="設定">⚙</button>
+    <div class="replay-controls" id="replayControls" style="display:none">
+      <button id="prevBar" data-i18n-title="ctrl.prev" title="上一根 (←)">◀</button>
+      <button id="nextBar" data-i18n-title="ctrl.next" title="下一根 (→ / Space)"><span data-i18n="ctrl.next">下一根 ▶</span></button>
+      <button id="play" data-i18n="ctrl.play">▶ 播放</button>
+      <select class="speed-select" id="speed">
+        <option value="800" data-i18n="speed.slow">慢 (0.8s)</option>
+        <option value="400" selected data-i18n="speed.med">中 (0.4s)</option>
+        <option value="150" data-i18n="speed.fast">快 (0.15s)</option>
+        <option value="50" data-i18n="speed.veryFast">極快</option>
+      </select>
+      <button id="jumpStart" title="跳到資料開頭">⏮</button>
+      <button id="jumpEnd" title="跳到資料結尾">⏭</button>
+      <span class="date-jump" id="dateJumpWrap" style="display:none">
+        <input type="date" id="jumpDate" title="跳到指定日期">
+        <button id="btnJumpDate" data-i18n="ctrl.jumpTo">跳到</button>
+      </span>
+    </div>
+    <div class="ds-info" id="dsInfo" data-i18n="header.dsInfo">尚未載入資料</div>
+  </header>
+
+  <div class="main">
+    <div class="charts-wrap">
+      <div class="charts" id="chartsContainer">
+        <div class="empty-state" id="emptyState">
+          <h3 data-i18n="empty.title">請匯入 CSV 開始練習</h3>
+          <p>支援格式：<code>Date,Time,Open,High,Low,Close,Volume</code><br>
+          例：<code>20230101,15:00:00,1850.5,1855.0,1849.2,1853.7,1234</code></p>
+          <p class="hint">提示：可同時匯入過去匯出的交易紀錄 CSV，接續上次練習進度</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar" style="display:none">
+      <!-- Top pill tabs -->
+      <div class="pill-group tab-pills" id="mainTabs">
+        <button class="pill active" data-main-tab="trade" data-i18n="tabs.trade">下單</button>
+        <button class="pill" data-main-tab="indicators" data-i18n="tabs.indicators">指標</button>
+        <button class="pill" data-main-tab="prefs" data-i18n="tabs.prefs">偏好</button>
+        <button class="pill" data-main-tab="stats" data-i18n="tabs.stats">績效</button>
+      </div>
+      <div class="tab-content-container">
+        <div class="tab-content active" data-main-tab="trade">
+      <!-- Account Settings -->
+      <div class="panel">
+        <h2 data-i18n="panel.account">帳戶設定</h2>
+        <div style="margin-bottom:10px">
+          <label data-i18n="label.initBalance">初始餘額 ($)</label>
+          <div class="row-flex">
+            <input type="number" id="initBalance" value="100000" step="1000" min="100">
+            <span id="lockIcon" class="lock-icon" data-i18n="lock.unlocked">🔓 可改</span>
+          </div>
+          <div class="hint-small" id="balanceHint" data-i18n="hint.lockBeforeTrade">模擬開始（首筆交易）後將鎖定</div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label data-i18n="label.marginPct">保證金率 (%)</label>
+            <input type="number" id="marginPct" value="5" step="0.1" min="0.1" max="100">
+          </div>
+          <div>
+            <label data-i18n="label.unitsPerLot">一倉單位</label>
+            <input type="number" id="unitsPerLot" value="100" step="1" min="1">
+          </div>
+        </div>
+        <div class="hint-small" data-i18n="hint.marginUnits">名目 = 進場價 × 口數 × 一倉單位；佔用保證金 = 名目 × 保證金率%</div>
+
+        <h2 class="mt12" data-i18n="panel.marginCall">強平設定</h2>
+        <label class="pref-row">
+          <input type="checkbox" id="marginCallEnable" checked>
+          <span data-i18n="prefs.marginCallEnable">啟用自動強平</span>
+        </label>
+        <label class="pref-row">
+          <input type="checkbox" id="marginLevelEnable" checked>
+          <span data-i18n="prefs.marginLevelEnable">使用保證金維持率（&lt;</span>
+          <input type="number" id="marginLevelPct" value="50" min="10" max="100" class="pref-num">
+          <span data-i18n="prefs.marginLevelSuf">% 時開始強平虧損最大倉位）</span>
+        </label>
+        <div class="hint-small" data-i18n="hint.marginCall">關閉維持率 → 總虧損 = 已用保證金時直接平倉全部</div>
+      </div>
+
+      <!-- Trade Entry -->
+      <div class="panel">
+        <h2 data-i18n="panel.trade">下單模擬</h2>
+        <div class="bid-ask">
+          <div class="ba-item">
+            <div class="ba-label" data-i18n="label.askPrice">買價 Ask</div>
+            <div class="ba-ask" id="dispAsk">—</div>
+          </div>
+          <div class="ba-item">
+            <div class="ba-label" data-i18n="label.bidPrice">賣價 Bid</div>
+            <div class="ba-bid" id="dispBid">—</div>
+          </div>
+          <div class="ba-item">
+            <div class="ba-label" data-i18n="label.spreadShort">點差</div>
+            <div class="ba-spread" id="dispSpread">0.50</div>
+          </div>
+        </div>
+        <div class="grid2"><div><label data-i18n="label.size">口數</label><input type="number" id="orderSize" value="1" step="0.01" min="0.01"></div></div>
+        <input type="hidden" id="orderLev" value="20">
+        <div class="grid2"><div><label data-i18n="label.spread">點差 ($)</label><input type="number" id="spread" value="0.5" step="0.1" min="0"></div></div>
+        <input type="hidden" id="contractMult" value="100">
+        <!-- SL: mode + value + optional trail floor -->
+        <div style="margin-bottom:6px">
+          <label data-i18n="label.sl">停損 (SL)</label>
+          <div class="pill-group" data-syncs-select="slMode"><button class="pill" data-value="none" data-i18n="pill.none">不設</button><button class="pill active" data-value="dist" data-i18n="pill.dist">距離</button><button class="pill" data-value="abs" data-i18n="pill.abs">絕對價</button><button class="pill" data-value="trail" data-i18n="pill.trail">移動</button></div>
+          <div style="display:grid;grid-template-columns:108px 1fr;gap:6px;">
+            <select id="slMode" style="display:none">
+              <option value="none">不設</option>
+              <option value="dist" selected>距離(美元)</option>
+              <option value="abs">絕對價</option>
+              <option value="trail">移動止損</option>
+            </select>
+            <input type="number" id="slValue" data-i18n-ph="ph.priceOrDist" placeholder="價格或距離" step="0.01">
+          </div>
+          <div id="slFloorWrap" style="display:none; margin-top:6px; padding:6px 8px; background:#1f2535; border-left:3px solid #a78bfa; border-radius:0 4px 4px 0">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;color:#d8dde6;margin-bottom:4px">
+              <input type="checkbox" id="slFloorEnable"> <span data-i18n="label.slFloorEnable">設止損底線（移動止損的最後保險）</span>
+            </label>
+            <div id="slFloorInputs" style="display:none;">
+              <div style="display:grid;grid-template-columns:108px 1fr;gap:6px;">
+                <select id="slFloorMode">
+                  <option value="dist" selected>距離(美元)</option>
+                  <option value="abs">絕對價</option>
+                </select>
+                <input type="number" id="slFloorValue" data-i18n-ph="ph.floor" placeholder="底線" step="0.01">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TP: mode + value -->
+        <div style="margin-bottom:6px">
+          <label data-i18n="label.tp">停利 (TP)</label>
+          <div class="pill-group" data-syncs-select="tpMode"><button class="pill" data-value="none" data-i18n="pill.none">不設</button><button class="pill active" data-value="dist" data-i18n="pill.dist">距離</button><button class="pill" data-value="abs" data-i18n="pill.abs">絕對價</button></div>
+          <div style="display:grid;grid-template-columns:108px 1fr;gap:6px;">
+            <select id="tpMode" style="display:none">
+              <option value="none">不設</option>
+              <option value="dist" selected>距離(美元)</option>
+              <option value="abs">絕對價</option>
+            </select>
+            <input type="number" id="tpValue" data-i18n-ph="ph.priceOrDist" placeholder="價格或距離" step="0.01">
+          </div>
+        </div>
+
+        <!-- Order type selector -->
+        <div class="order-type-row">
+          <div>
+            <label data-i18n="label.orderType">進場類型</label>
+            <select id="orderType">
+              <option value="market" selected data-i18n="order.market">市價 Market</option>
+              <option value="limit" data-i18n="order.limit">限價 Limit</option>
+              <option value="stop" data-i18n="order.stop">停損觸發 Stop</option>
+              <option value="oco" data-i18n="order.oco">OCO 對沖</option>
+            </select>
+          </div>
+          <div id="triggerPriceWrap" style="display:none">
+            <label id="triggerPriceLabel" data-i18n="label.triggerPrice">觸發價</label>
+            <input type="number" id="triggerPrice" step="0.01" data-i18n-ph="ph.price" placeholder="價格">
+          </div>
+        </div>
+        <div id="ocoExtraWrap" style="display:none; margin-bottom:6px;">
+          <label data-i18n="label.ocoSecond">OCO 第二觸發價 (對向)</label>
+          <input type="number" id="triggerPrice2" step="0.01" data-i18n-ph="ph.triggerPrice2" placeholder="另一邊的觸發價">
+          <div class="hint-small" data-i18n="hint.oco">OCO 會同時掛兩張對向單，任一觸發後另一張自動取消</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-long" id="btnLong" data-i18n="btn.long">買進 / Long</button>
+          <button class="btn btn-short" id="btnShort" data-i18n="btn.short">放空 / Short</button>
+        </div>
+        <div class="flat-actions">
+          <button class="btn btn-flat-longs" id="btnFlatLongs"><span data-i18n="btn.flatLongs">全平多單</span></button>
+          <button class="btn btn-flat-shorts" id="btnFlatShorts"><span data-i18n="btn.flatShorts">全平空單</span></button>
+        </div>
+        <button class="btn btn-flat" id="btnFlatSelected" style="display:none"><span data-i18n="btn.flatSelected">平倉選中</span> <span id="flatSelectedCount"></span></button>
+        <button class="btn btn-flat" id="btnFlat" style="display:none" data-i18n="btn.flatAll">平倉全部</button>
+        <div id="marginInfo" class="margin-info" style="display:none"></div>
+        <div id="positionsList" class="positions-list"></div>
+
+        <!-- Pending orders list -->
+        <div class="pending-orders-list" id="pendingOrdersList"></div>
+      </div>
+        </div><!-- /tab-content trade -->
+        <div class="tab-content" data-main-tab="prefs">
+
+      <!-- Preferences -->
+      <div class="panel">
+        <h2 data-i18n="panel.prefs">練習偏好 Preferences</h2>
+
+        <div class="pref-group">
+          <div class="pref-h3" data-i18n="prefs.notes">📝 交易筆記</div>
+          <label class="pref-row"><input type="checkbox" id="prefNoteEntry"> <span data-i18n="prefs.notesEntry">開倉前提示「為什麼？」</span></label>
+          <label class="pref-row"><input type="checkbox" id="prefNoteExit"> <span data-i18n="prefs.notesExit">手動平倉時提示「學到什麼？」</span></label>
+          <div class="hint-small" style="margin-top:3px" data-i18n="hint.notes">交易紀錄中有筆記的列會顯示 📝，點任一列可編輯</div>
+        </div>
+
+        <div class="pref-group">
+          <div class="pref-h3" data-i18n="prefs.alerts">⚠️ 行為警示</div>
+          <label class="pref-row"><input type="checkbox" id="prefAlertNoSL"> <span data-i18n="prefs.alertNoSL">未設停損就下單</span></label>
+          <label class="pref-row">
+            <input type="checkbox" id="prefAlertOvertrading">
+            <span>過度交易（過去 1 小時已成 <input type="number" id="prefOvertradingN" value="10" min="2" max="50" class="pref-num"> 筆以上）</span>
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" id="prefAlertLossStreak">
+            <span>連敗冷靜（連續 <input type="number" id="prefLossStreakN" value="3" min="2" max="10" class="pref-num"> 筆虧損後）</span>
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" id="prefAlertRisk">
+            <span>單筆風險 &gt; <input type="number" id="prefRiskPct" value="5" step="0.1" min="0.1" max="50" class="pref-num"> % 帳戶</span>
+          </label>
+          <label class="pref-row">
+            <input type="checkbox" id="prefAlertLeverage">
+            <span>名目槓桿 &gt; <input type="number" id="prefLeverageMult" value="10" min="1" max="100" class="pref-num"> ×</span>
+          </label>
+          <div class="hint-small" style="margin-top:3px" data-i18n="hint.alerts">觸發時會彈出警示視窗，使用者需確認才送單</div>
+        </div>
+      </div>
+        </div><!-- /tab-content prefs -->
+        <div class="tab-content" data-main-tab="indicators">
+
+      <!-- Indicators -->
+      <div class="panel">
+        <h2 data-i18n="panel.mainIndicators">主圖指標 (Price + BB + MA)</h2>
+        <div class="indicator-toggle">
+          <label><input type="checkbox" id="showMA" checked><span data-i18n="indicators.ma">均線</span></label>
+          <label><input type="checkbox" id="showBB" checked><span data-i18n="indicators.bb">布林</span></label>
+        </div>
+
+        <h2 class="mt8" data-i18n="indicators.maList">均線 Moving Averages</h2>
+        <div id="maList"></div>
+        <button class="add-btn" id="addMa" data-i18n="indicators.add">+ 新增均線</button>
+
+        <h2 class="mt10" data-i18n="indicators.bb_full">布林通道 (BB)</h2>
+        <div class="grid2">
+          <div><label data-i18n="indicators.period">週期</label><input type="number" id="bbPeriod" value="20"></div>
+          <div><label data-i18n="indicators.stddev">標準差</label><input type="number" id="bbStd" value="2" step="0.1"></div>
+        </div>
+
+        <h2 class="mt12" data-i18n="indicators.overlays">主圖疊加指標</h2>
+        <div class="hint-small" data-i18n="hint.overlays">疊加在 K 線上的指標（Donchian / Keltner / VWAP / SAR / Ichimoku 等）</div>
+        <div id="overlayList" class="pane-list"></div>
+        <div class="add-pane-row">
+          <select id="newOverlayType">
+            <option value="donchian">Donchian Channel</option>
+            <option value="keltner">Keltner Channel</option>
+            <option value="vwap">VWAP (daily)</option>
+            <option value="sar">Parabolic SAR</option>
+            <option value="supertrend">SuperTrend</option>
+            <option value="ichimoku">Ichimoku</option>
+          </select>
+          <button class="add-btn" id="addOverlay" data-i18n="indicators.addOverlay">+ 新增疊加</button>
+        </div>
+
+        <h2 class="mt12" data-i18n="indicators.subpanes">副圖指標面板</h2>
+        <div class="hint-small" data-i18n="hint.subpanes">下方主圖以外的指標面板可新增/刪除，並用面板之間的橫桿拖曳調整高度。</div>
+        <div id="paneList" class="pane-list"></div>
+        <div class="add-pane-row">
+          <select id="newPaneType">
+            <optgroup label="趨勢/動能">
+              <option value="adx">ADX (+DI/-DI)</option>
+              <option value="momentum">Momentum</option>
+              <option value="roc">ROC</option>
+              <option value="cci">CCI</option>
+              <option value="williams">Williams %R</option>
+            </optgroup>
+            <optgroup label="震盪">
+              <option value="kdj">KDJ</option>
+              <option value="macd">MACD</option>
+              <option value="rsi">RSI</option>
+              <option value="stoch">Stochastic</option>
+            </optgroup>
+            <optgroup label="波動/量">
+              <option value="atr">ATR</option>
+              <option value="volume">Volume</option>
+            </optgroup>
+          </select>
+          <button class="add-btn" id="addPane" data-i18n="indicators.addPane">+ 新增指標面板</button>
+        </div>
+
+        <button class="btn btn-step mt10" id="applyParams" data-i18n="btn.applyParams">套用參數</button>
+      </div>
+
+      <!-- Custom Indicators -->
+      <div class="panel">
+        <h2 data-i18n="panel.custom">自訂指標 Custom Indicators</h2>
+        <div class="hint-small" data-i18n="hint.custom">用公式定義你自己的指標，存在瀏覽器，可匯出 JSON 備份或分享。</div>
+        <div id="customList" class="pane-list"></div>
+        <div class="grid2 mt8">
+          <button class="add-btn" id="openCustomEditor" data-i18n="custom.add">+ 新增自訂</button>
+          <button class="add-btn" id="exportCustom" data-i18n="custom.export">匯出 JSON</button>
+        </div>
+        <label class="add-btn" id="importCustomBtn" style="text-align:center;display:block;">
+          匯入 JSON
+          <input type="file" id="importCustomFile" accept=".json" style="display:none">
+        </label>
+      </div>
+        </div><!-- /tab-content indicators -->
+        <div class="tab-content" data-main-tab="stats">
+
+      <!-- Stats -->
+      <div class="panel">
+        <h2 data-i18n="panel.stats">績效指標</h2>
+        <div class="stat"><span class="k" data-i18n="stats.totalTrades">總交易數</span><span class="v" id="sTotal">0</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.winRate">勝率</span><span class="v" id="sWin">0.00%</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.totalPnL">總損益</span><span class="v" id="sPnL">0.00</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.equity">當前權益</span><span class="v" id="sEquity">100,000</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.return">總報酬率</span><span class="v" id="sRet">0.00%</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.pf">獲利因子</span><span class="v" id="sPF">0.00</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.avgWinLoss">平均盈/虧</span><span class="v" id="sAvg">0 / 0</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.rr">盈虧比 RR</span><span class="v" id="sRR">0.00</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.sharpe">夏普比率</span><span class="v" id="sSharpe">0.00</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.maxDD">最大回撤</span><span class="v" id="sDD">0.00%</span></div>
+        <div class="stat"><span class="k" data-i18n="stats.exp">期望值/筆</span><span class="v" id="sExp">0.00</span></div>
+        <div class="grid2 mt8">
+          <button class="btn btn-flat" id="btnReset" data-i18n="btn.reset">重置帳戶</button>
+          <button class="btn btn-flat" id="btnExport" data-i18n="btn.export">匯出 CSV</button>
+        </div>
+      </div>
+
+      <!-- Trade Log -->
+      <div class="panel">
+        <h2 data-i18n="panel.tradeLog">交易紀錄</h2>
+        <div class="trades">
+          <table id="tradeTable">
+            <thead>
+              <tr><th data-i18n="log.idx">#</th><th data-i18n="log.side">方向</th><th data-i18n="log.entry">進場</th><th data-i18n="log.exit">出場</th><th data-i18n="log.reason">原因</th><th data-i18n="log.pnl">P&amp;L</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+        </div><!-- /tab-content stats -->
+      </div><!-- /tab-content-container -->
+    </aside>
+<div class="settings-popover" id="settingsPopover" style="display:none">
+  <div class="settings-section"><h3 data-i18n="settings.theme">主題色</h3>
+    <div class="pill-group" id="settingsTheme">
+      <button class="pill active" data-value="ocean">海藍</button>
+      <button class="pill" data-value="emerald">青綠</button>
+      <button class="pill" data-value="violet">紫羅蘭</button>
+    </div></div>
+  <div class="settings-section"><h3 data-i18n="settings.candle">K 線漲跌色</h3>
+    <div class="pill-group" id="settingsCandle">
+      <button class="pill active" data-value="green-up">漲綠跌紅</button>
+      <button class="pill" data-value="red-up">漲紅跌綠</button>
+    </div></div>
+  <div class="settings-section"><h3 data-i18n="settings.lang">語言</h3>
+    <div class="pill-group" id="settingsLang">
+      <button class="pill active" data-value="zh-TW">中文</button>
+      <button class="pill" data-value="en-US">English</button>
+    </div></div>
+  <button class="btn btn-step" id="settingsDone" data-i18n="settings.done">完成</button>
+</div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

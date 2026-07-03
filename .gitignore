@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Node (只在 dev-log 產生時用到)
+node_modules/
+package-lock.json
+
+# Pages / build artifacts (通常不會有，但預防萬一)
+.cache/
+_site/
