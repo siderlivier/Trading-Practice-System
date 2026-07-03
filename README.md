@@ -6,7 +6,7 @@
 
 ![練習交易終端](docs/screenshots/基礎介面.png)
 
-[線上試用](https://YOUR_USERNAME.github.io/trading-practice) · [截圖展示](#截圖展示) · [技術亮點](#技術亮點)
+[截圖展示](#截圖展示) · [功能亮點](#功能亮點) · [技術亮點](#技術亮點)
 
 </div>
 
@@ -53,6 +53,13 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 </div>
 
+### 行為警示 & 交易筆記 — 教你避開常見錯誤
+多數模擬器只記錄結果，這裡把「行為金融學」寫進了工具本身：五種可獨立開關的行為警示 + 開倉/平倉筆記，幫助新手在下單前先自問「為什麼」。
+
+<div align="center">
+<img src="docs/screenshots/偏好設置.png" alt="偏好設定 — 交易筆記與行為警示" width="480" />
+</div>
+
 ### 分析頁儀表板
 11 個視覺化維度，從權益曲線到出場原因分析，全部從 `localStorage` 中的交易紀錄即時計算。
 
@@ -62,7 +69,7 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 **月度損益、進場時段勝率、星期幾勝率、P&L 分佈、持倉時間分佈、滾動勝率**
 
-<img src="docs/screenshots/分析頁(月損益)、進場時段勝率、星期幾勝率、PnL分佈、持倉時間分佈、滾動勝率).png" alt="分析頁 - 分佈與時段" />
+![分析頁 - 分佈與時段](docs/screenshots/分析頁(月損益、進場時段勝率、星期幾勝率、PnL分佈、持倉時間分佈、滾動勝率).png)
 
 **Long/Short 對比、出場原因分析、完整交易明細**
 
@@ -85,7 +92,7 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 **訂單類型** — 市價、限價、停損觸發（Stop）、OCO 對沖組合。每張掛單都可以帶自己的 SL/TP 設定，在成交當下自動套用。
 
-**SL/TP 模式** — 不設 / 距離（美元） / 絕對價 / 移動止損（可搭配止損底線作為最後安全網）。移動止損採用保守的「先檢查、後更新」bar-resolution 順序，避免同根 K 棒的上下影線造成假訊號觸發。
+**SL/TP 模式** — 不設 / 距離（美元）/ 絕對價 / 移動止損（可搭配止損底線作為最後安全網）。移動止損採用保守的「先檢查、後更新」bar-resolution 順序，避免同根 K 棒的上下影線造成假訊號觸發。
 
 **多倉位保證金引擎** — 可同時開任意數量多空倉位（僅受保證金限制）。可調整保證金比率、一倉單位（例如黃金 CFD 100 盎司、白銀 5000 盎司）。內建強制平倉機制：可設維持率門檻（優先平掉虧損最大的倉位）或全平模式（當總虧損 = 已用保證金時全平）。
 
@@ -134,19 +141,16 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 ## 快速開始
 
-**方式 1 — 線上試用（推薦）**
-直接打開 [YOUR_USERNAME.github.io/trading-practice](https://YOUR_USERNAME.github.io/trading-practice)，匯入任意 OHLC 格式 CSV 就能開始練習。
-
-**方式 2 — 本地執行**
+**方式 1 — 本地執行（推薦）**
 ```bash
-git clone https://github.com/YOUR_USERNAME/trading-practice.git
-cd trading-practice
+git clone https://github.com/SiderLivier/Trading-Practice-System.git
+cd Trading-Practice-System
 # 任意靜態伺服器皆可，以 Python 為例：
 python -m http.server 8000
 # 開啟 http://localhost:8000
 ```
 
-**方式 3 — 直接雙擊開啟**
+**方式 2 — 直接雙擊開啟**
 所有檔案都是靜態的，直接雙擊 `index.html` 就可以（但用伺服器跑會讓 `localStorage` 保留更穩定）。
 
 **CSV 格式**
@@ -162,7 +166,7 @@ Date,Time,Open,High,Low,Close,Volume
 ## 專案結構
 
 ```
-trading-practice/
+Trading-Practice-System/
 ├── index.html              # 練習終端主頁
 ├── analytics.html          # 分析頁儀表板
 ├── assets/
@@ -172,11 +176,8 @@ trading-practice/
 │   └── analytics.js        # ~500 行：分析頁渲染
 ├── sample_data/            # 內建 OHLC 樣本
 ├── dev-log/                # 開發紀錄（自動產生的 .docx）
-├── docs/
-│   ├── DEPLOY.md           # GitHub Pages 部署指引
-│   └── screenshots/        # README 用圖片
-└── .github/workflows/
-    └── deploy.yml          # 自動部署到 GitHub Pages
+└── docs/
+    └── screenshots/        # README 用圖片
 ```
 
 ---
@@ -185,6 +186,7 @@ trading-practice/
 
 後續正在思考的功能：
 
+- **線上 Live Demo（GitHub Pages）** — 讓訪客不需下載即可直接試用（等 GitHub Pages 服務可用時上線）
 - **互動式教學導覽** — 5 分鐘首次使用引導
 - **情境範例庫** — 預載有趣的歷史片段並附提示（「試試這個突破設定」、「這裡練均值回歸」）
 - **多時間框架同步** — 在較高時間框架加一個小副圖
@@ -206,5 +208,5 @@ trading-practice/
 ---
 
 <div align="center">
-花了大約 2 週用 ☕ 打造。歡迎意見與批評 — <a href="https://github.com/YOUR_USERNAME/trading-practice/issues/new">開個 issue</a>
+花了大約 2 週用 ☕ 打造。歡迎意見與批評 — <a href="https://github.com/SiderLivier/Trading-Practice-System/issues/new">開個 issue</a>
 </div>
