@@ -4,7 +4,7 @@
 
 **瀏覽器端零依賴、可用方塊拖曳自訂指標、支援多倉位保證金引擎的模擬交易練習平台**
 
-![練習交易終端](docs/screenshots/基礎介面.png)
+![練習交易終端](docs/screenshots/main-ui.png)
 
 [截圖展示](#截圖展示) · [功能亮點](#功能亮點) · [技術亮點](#技術亮點)
 
@@ -30,7 +30,7 @@
 ### 主畫面
 K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
-![主畫面](docs/screenshots/基礎介面.png)
+![主畫面](docs/screenshots/main-ui.png)
 
 ### 自訂指標編輯器 — 雙模式共用同一 AST
 非工程師可以拖拉「型別化方塊」組合出技術指標，公式編譯器將其轉為經快取的 JS 閉包。方塊模式與文字模式**共用同一份儲存格式**，切來切去無縫接軌。
@@ -39,7 +39,7 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 | 方塊模式 | 文字模式 |
 | :---: | :---: |
-| ![方塊模式](docs/screenshots/自定義指標(方塊).png) | ![文字模式](docs/screenshots/自定義指標(文字).png) |
+| ![方塊模式](docs/screenshots/custom-indicator-blocks.png) | ![文字模式](docs/screenshots/custom-indicator-text.png) |
 
 </div>
 
@@ -49,7 +49,7 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 | 下單 & 倉位 | 帳戶 & 保證金 | 指標管理 | 績效面板 |
 | :---: | :---: | :---: | :---: |
-| ![下單區域](docs/screenshots/下單區域.png) | ![帳戶設定](docs/screenshots/帳戶與槓桿設定.png) | ![指標設定](docs/screenshots/指標設定區域.png) | ![績效面板](docs/screenshots/績效記錄區域.png) |
+| ![下單區域](docs/screenshots/sidebar-order.png) | ![帳戶設定](docs/screenshots/sidebar-account.png) | ![指標設定](docs/screenshots/sidebar-indicators.png) | ![績效面板](docs/screenshots/sidebar-performance.png) |
 
 </div>
 
@@ -57,7 +57,7 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 多數模擬器只記錄結果，這裡把「行為金融學」寫進了工具本身：五種可獨立開關的行為警示 + 開倉/平倉筆記，幫助新手在下單前先自問「為什麼」。
 
 <div align="center">
-<img src="docs/screenshots/偏好設置.png" alt="偏好設定 — 交易筆記與行為警示" width="480" />
+<img src="docs/screenshots/sidebar-preferences.png" alt="偏好設定 — 交易筆記與行為警示" width="480" />
 </div>
 
 ### 分析頁儀表板
@@ -65,21 +65,21 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 
 **總覽、權益曲線、回撤**
 
-![分析頁 - 總覽](docs/screenshots/分析頁(總覽、權益取縣、回撤).png)
+![分析頁 - 總覽](docs/screenshots/analytics-overview.png)
 
 **月度損益、進場時段勝率、星期幾勝率、P&L 分佈、持倉時間分佈、滾動勝率**
 
-![分析頁 - 分佈與時段](docs/screenshots/分析頁(月損益、進場時段勝率、星期幾勝率、PnL分佈、持倉時間分佈、滾動勝率).png)
+![分析頁 - 分佈與時段](docs/screenshots/analytics-distributions.png)
 
 **Long/Short 對比、出場原因分析、完整交易明細**
 
-![分析頁 - 對比與明細](docs/screenshots/分析頁(LS對比、出場原因分析、交易明細).png)
+![分析頁 - 對比與明細](docs/screenshots/analytics-comparison.png)
 
 ### 第一次開啟
 還沒匯入 CSV 前的畫面 — 專案內附 `sample_data/` 資料夾內的樣本可直接使用。
 
 <div align="center">
-<img src="docs/screenshots/未匯入CSV檔案.png" alt="空狀態" width="720" />
+<img src="docs/screenshots/empty-state.png" alt="空狀態" width="720" />
 </div>
 
 ---
@@ -109,6 +109,8 @@ K 線圖表、指標、繪圖工具與交易側邊欄整合在單一視圖中。
 ---
 
 ## 技術亮點
+
+面試時我會拿來聊的技術細節：
 
 **自訂指標公式編譯器** — 手寫的遞迴下降語法分析器將 `sma(close, period) - ema(close, 50)` 這類表達式 tokenize → AST → 產生呼叫向量化 helpers 的 JS source。編譯後的表達式用 `new Function()` 快取，5000 根 K 棒視窗執行 <5ms。支援 element-wise 的 + / − / × / ÷ 運算子，自動處理陣列與純量的型別強制轉換與 null 傳播。
 
@@ -184,13 +186,18 @@ Trading-Practice-System/
 
 後續正在思考的功能：
 
-- **線上 Live Demo（GitHub Pages）** — 讓訪客不需下載即可直接試用
+- **線上 Live Demo（GitHub Pages）** — 讓訪客不需下載即可直接試用（等 GitHub Pages 服務可用時上線）
 - **互動式教學導覽** — 5 分鐘首次使用引導
 - **情境範例庫** — 預載有趣的歷史片段並附提示（「試試這個突破設定」、「這裡練均值回歸」）
 - **多時間框架同步** — 在較高時間框架加一個小副圖
 - **策略回測執行器** — 讓使用者定義規則自動執行
 - **多商品比較** — 同時載入黃金 + 白銀 + 原油，觀察跨市場相關性
-- **更多語言** - 讓更多不同國家使用者可以順暢使用
+
+---
+
+## 貢獻
+
+歡迎 Issues 與 PRs。如果你有想分享的策略或指標範本，我很樂意加入專案。
 
 ---
 
@@ -201,5 +208,5 @@ Trading-Practice-System/
 ---
 
 <div align="center">
-花了大約1個月用配合使用Claude打造。歡迎意見與批評 — <a href="https://github.com/SiderLivier/Trading-Practice-System/issues/new">開個 issue</a>
+花了大約 2 週用 ☕ 打造。歡迎意見與批評 — <a href="https://github.com/SiderLivier/Trading-Practice-System/issues/new">開個 issue</a>
 </div>
